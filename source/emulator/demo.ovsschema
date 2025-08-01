@@ -1,0 +1,93 @@
+{
+  "name": "Open_vSwitch",
+  "version": "1.0.0",
+  "cksum": "1234567 891011",
+  "tables": {
+    "Gateway_Config": {
+      "columns": {
+        "gre_ifname": {
+          "type": {
+            "key": "string",
+            "min": 0
+          }
+        },
+        "if_name": {
+          "type": "string"
+        },
+        "if_type": {
+          "type": {
+            "key": {
+              "enum": [
+                "set",
+                [
+                  0,
+                  1,
+                  2,
+                  3,
+                  4
+                ]
+              ],
+              "type": "integer"
+            }
+          }
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "inet_addr": {
+          "type": {
+            "key": "string",
+            "min": 0
+          }
+        },
+        "netmask": {
+          "type": {
+            "key": "string",
+            "min": 0
+          }
+        },
+        "gre_remote_inet_addr": {
+          "type": {
+            "key": "string",
+            "min": 0
+          }
+        },
+        "gre_local_inet_addr": {
+          "type": {
+            "key": "string",
+            "min": 0
+          }
+        },
+        "parent_ifname": {
+          "type": {
+            "key": "string",
+            "min": 0
+          }
+        },
+        "mtu": {
+          "type": {
+            "key": "integer",
+            "min": 0
+          }
+        },
+        "parent_bridge": {
+          "type": {
+            "key": "string",
+            "min": 0
+          }
+        },
+        "vlan_id": {
+          "type": {
+            "key": {
+              "maxInteger": 4096,
+              "minInteger": 0,
+              "type": "integer"
+            },
+            "min": 0
+          }
+        }
+      },
+      "isRoot": true
+    }
+  }
+}

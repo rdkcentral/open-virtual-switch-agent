@@ -1,0 +1,11 @@
+ovs-vsctl del-port brlan0 mygre.100
+ovs-vsctl del-port brlan1 eth0.1060
+ovs-vsctl del-br br403
+ovs-vsctl del-br brlan0
+ovs-vsctl del-br brlan1
+
+ip link del brlan0
+ip link del brlan1
+ip link del br403
+ip link del mygre
+ip link del eth0.1060

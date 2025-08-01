@@ -1,0 +1,1 @@
+ovsdb-client transact '["Open_vSwitch",{"op":"insert", "table":"Gateway_Config", "row":{"gre_ifname":"null" ,"if_name":"brmine_cli2", "if_type":1, "if_cmd":0, "inet_addr":"192.168.106.1", "netmask":"255.255.255.0", "gre_remote_inet_addr":"null", "gre_local_inet_addr":"null", "parent_ifname":"null", "mtu":1500, "parent_bridge":"null", "vlan_id":1} }]'

@@ -1,0 +1,3 @@
+killall ovsdb-server
+rm -rf demo.db
+ovsdb-tool create demo.db ovs.ovschema

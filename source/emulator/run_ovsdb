@@ -1,0 +1,5 @@
+killall ovsdb-server
+#ovsdb-server --verbose --pidfile --detach --log-file --remote punix:/usr/local/var/run/openvswitch/db.sock demo.db
+ovsdb-server --verbose --pidfile --detach --log-file --remote punix:/var/run/openvswitch/db.sock conf.db
+sleep 2
+ovsdb-client list-tables Open_vSwitch
