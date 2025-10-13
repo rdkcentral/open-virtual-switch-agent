@@ -154,6 +154,11 @@ static bool SetModelNum(const char * model_num, ovs_action_config * config)
         config->modelNum = OVS_CGM601TCOM_MODEL;
         rtn = true;
     }
+    else if (strcmp(model_num, "CWA438TCOM") == 0)
+    {
+        config->modelNum = OVS_CWA438TCOM_MODEL;
+        rtn = true;
+    }
     else if (strcmp(model_num, "SG417DBCT") == 0)
     {
         config->modelNum = OVS_SG417DBCT_MODEL;
@@ -1096,6 +1101,7 @@ static OVS_STATUS ovs_setup_bridge_flows(Gateway_Config * req)
         (g_ovsActionConfig.modelNum == OVS_CGA4332COM_MODEL) ||
         (g_ovsActionConfig.modelNum == OVS_CGM4981COM_MODEL) ||
         (g_ovsActionConfig.modelNum == OVS_CGM601TCOM_MODEL) ||
+        (g_ovsActionConfig.modelNum == OVS_CWA438TCOM_MODEL) ||
         (g_ovsActionConfig.modelNum == OVS_SG417DBCT_MODEL) ||
         (g_ovsActionConfig.modelNum == OVS_VTER11QEL_MODEL) ||
 	(g_ovsActionConfig.modelNum == OVS_SR203_MODEL)))
@@ -1172,6 +1178,7 @@ static OVS_STATUS ovs_setup_port_flows(Gateway_Config * req)
             (g_ovsActionConfig.modelNum == OVS_CGM4331COM_MODEL) ||
             (g_ovsActionConfig.modelNum == OVS_CGA4332COM_MODEL) ||
             (g_ovsActionConfig.modelNum == OVS_CGM601TCOM_MODEL) ||
+            (g_ovsActionConfig.modelNum == OVS_CWA438TCOM_MODEL) ||
             (g_ovsActionConfig.modelNum == OVS_CGM4981COM_MODEL) ||
             (g_ovsActionConfig.modelNum == OVS_SG417DBCT_MODEL) ||
             (g_ovsActionConfig.modelNum == OVS_VTER11QEL_MODEL) ||

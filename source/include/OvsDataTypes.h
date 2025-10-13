@@ -118,6 +118,7 @@ typedef enum ovs_device_model
   OVS_TG3482G_MODEL,    /**< Arris XB6. */
   OVS_CGM4981COM_MODEL, /** Technicolor XB8. */
   OVS_CGM601TCOM_MODEL, /** Vantiva XB10. */
+  OVS_CWA438TCOM_MODEL, /** Vantiva XB9. */
   OVS_SG417DBCT_MODEL,  /** Sercomm XB10. */
   OVS_CGM4331COM_MODEL, /** Technicolor XB7. */
   OVS_VTER11QEL_MODEL,  /** XER5. */
