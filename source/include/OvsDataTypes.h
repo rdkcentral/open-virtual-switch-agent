@@ -118,6 +118,7 @@ typedef enum ovs_device_model
   OVS_TG3482G_MODEL,    /**< Arris XB6. */
   OVS_CGM4981COM_MODEL, /** Technicolor XB8. */
   OVS_CGM601TCOM_MODEL, /** Vantiva XB10. */
+  OVS_CWA438TCOM_MODEL, /** Vantiva XB9. */
   OVS_SG417DBCT_MODEL,  /** Sercomm XB10. */
   OVS_CGM4331COM_MODEL, /** Technicolor XB7. */
   OVS_VTER11QEL_MODEL,  /** XER5. */
@@ -129,7 +130,8 @@ typedef enum ovs_device_model
   OVS_TG4482A_MODEL,    /** Commscope XB7. */
   OVS_CGA4332COM_MODEL, /** Technicolor CBR2. vinoth */
   OVS_SCER11BEL_MODEL,  /** Sercomm XER10 */
-  OVS_RPI_MODEL         /** RPI Reference Platform */
+  OVS_RPI_MODEL,        /** RPI Reference Platform */
+  OVS_SCXF11BFL_MODEL   /** Sercomm XF10 */
 } OVS_DEVICE_MODEL;
 
 #endif /* OVS_DATA_TYPES_H_ */
