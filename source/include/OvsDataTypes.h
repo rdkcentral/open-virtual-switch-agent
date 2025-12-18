@@ -130,7 +130,8 @@ typedef enum ovs_device_model
   OVS_TG4482A_MODEL,    /** Commscope XB7. */
   OVS_CGA4332COM_MODEL, /** Technicolor CBR2. vinoth */
   OVS_SCER11BEL_MODEL,  /** Sercomm XER10 */
-  OVS_RPI_MODEL         /** RPI Reference Platform */
+  OVS_RPI_MODEL,        /** RPI Reference Platform */
+  OVS_SCXF11BFL_MODEL   /** Sercomm XF10 */
 } OVS_DEVICE_MODEL;
 
 #endif /* OVS_DATA_TYPES_H_ */
