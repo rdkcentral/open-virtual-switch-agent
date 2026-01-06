@@ -1045,7 +1045,7 @@ static OVS_STATUS configureParentBridge(Gateway_Config * req, bool ovs_enabled,
         strcmp(req->parent_bridge, "brlan0") == 0 &&
         access("/tmp/warehouse_mode", F_OK) == 0)
     {
-        OvsActionInfo("%s: Skipping port %d addition to bridge %s due to warehouse_mode\n",
+        OvsActionInfo("%s: In warehouse mode, skipping port %s addition to bridge %s\n",
                         __func__, req->if_name, req->parent_bridge);
     }
     else
