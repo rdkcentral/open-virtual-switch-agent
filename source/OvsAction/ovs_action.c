@@ -127,6 +127,29 @@ void Set_Broadcast_address(char IfName[],char subnetmask[],char IpAddr[])
 }
 #endif
 
+static int run_cmd_bridge_dltype(const char *fmt, const char *bridge, unsigned int dl_type)
+{
+    int ret = v_secure_system(fmt, bridge, dl_type);
+    OvsActionDebug("%s : ret val of v_secure_system %d\n", __func__, ret);
+    return ret;
+}
+
+static bool is_brcm_wifi_model(int model)
+{
+    switch (model) {
+        case OVS_CGM4331COM_MODEL:
+        case OVS_CGA4332COM_MODEL:
+        case OVS_CGM4981COM_MODEL:
+        case OVS_CGM601TCOM_MODEL:
+        case OVS_SG417DBCT_MODEL:
+        case OVS_VTER11QEL_MODEL:
+        case OVS_SR203_MODEL:
+            return true;
+        default:
+            return false;
+    }
+}
+
 static bool SetModelNum(const char * model_num, ovs_action_config * config)
 {
     bool rtn = false;
@@ -746,39 +769,64 @@ static OVS_STATUS ovs_block_mso_ui_access(Gateway_Config * req)
     return OVS_SUCCESS_STATUS;
 }
 
-// Fix for RDKB-40884 on TCHXB7 and TCHXB8
-static OVS_STATUS ovs_setup_brcm_wifi_flows(Gateway_Config * req)
+// Modified function for the Mesh fast roaming scenarios
+// Originally function just took casre of Fixing for RDKB-40884 on TCHXB7 and TCHXB8
+static OVS_STATUS ovs_setup_brcm_wifi_flows(Gateway_Config *req)
 {
-    int idx = 0;
-    int ret = 0;
-    const unsigned int eth_types[] =
-        {ETHER_TYPE_BRCM, ETHER_TYPE_BRCM_AIRIQ, ETHER_TYPE_802_1X};
-
-    if (!req || strlen(req->parent_bridge) == 0)
-    {
+    if (!req || !req->parent_bridge || req->parent_bridge[0] == '\0') {
         return OVS_FAILED_STATUS;
     }
 
-    for (idx = 0; idx < sizeof(eth_types)/sizeof(eth_types[0]); idx++)
+    // --- EAPOL Must be forwarded - consideried for mesh roaming case ---
+    // 0x888e is EAPOL (IEEE 802.1X)
     {
-        if (((g_ovsActionConfig.modelNum == OVS_SR203_MODEL)) &&
-	    (eth_types[idx] == ETHER_TYPE_802_1X))
-        {   // If OneWifi is enabled (at compile time) or device is HUB4, do not setup 802.1X ovs flow.
-            OvsActionDebug("%s Skipping OVS flow for Ether Type 0x%04x\n",
-                __func__, eth_types[idx]);
-            continue;
-        }
+        const unsigned int EAPOL = ETHER_TYPE_802_1X; // 0x888e
+        OvsActionInfo("%s Adding EAPOL rules for faster roaming --- ", __func__);
 
-        OvsActionDebug("%s Cmd: ovs-ofctl --strict del-flows %s \"dl_type=0x%04x, actions=%s\"\n", __func__, req->parent_bridge, eth_types[idx], req->parent_bridge);
-        ret = v_secure_system("ovs-ofctl --strict del-flows %s \"dl_type=0x%04x, actions=%s\"",req->parent_bridge, eth_types[idx], req->parent_bridge);
-        OvsActionDebug("%s :  ret val of  v_secure_system %d \n",__func__,ret);
-        if (req->if_cmd != OVS_BR_REMOVE_CMD)
-        {
-            OvsActionDebug("%s Cmd: ovs-ofctl add-flow %s \"dl_type=0x%04x, actions=%s\"\n", __func__, req->parent_bridge, eth_types[idx], req->parent_bridge);
-            ret = v_secure_system("ovs-ofctl add-flow %s \"dl_type=0x%04x, actions=%s\"",req->parent_bridge, eth_types[idx], req->parent_bridge);
-	    OvsActionDebug("%s : ret val of  v_secure_system %d \n",__func__,ret);
+        OvsActionDebug("%s Cmd: ovs-ofctl --strict del-flows %s \"priority=3000,dl_type=0x%04x\"",
+                       __func__, req->parent_bridge, EAPOL);
+        (void)run_cmd_bridge_dltype(
+            "ovs-ofctl --strict del-flows %s \"priority=3000,dl_type=0x%04x\"",
+            req->parent_bridge, EAPOL);
+
+        if (req->if_cmd != OVS_BR_REMOVE_CMD) {
+            OvsActionDebug("%s Cmd: ovs-ofctl add-flow %s \"priority=3000,dl_type=0x%04x,actions=output:ALL\"",
+                           __func__, req->parent_bridge, EAPOL);
+            (void)run_cmd_bridge_dltype(
+                "ovs-ofctl add-flow %s \"priority=3000,dl_type=0x%04x,actions=output:ALL\"",
+                req->parent_bridge, EAPOL);
         }
     }
+
+    // --- For Broadcom wifi drivers, where onewifi is not enabled, apply these rules ---
+    if (!g_ovsActionConfig.oneWifiEnabled) {
+        const unsigned int brcm_types[] = {
+            ETHER_TYPE_BRCM,
+            ETHER_TYPE_BRCM_AIRIQ,
+        };
+
+        for (size_t i = 0; i < sizeof(brcm_types) / sizeof(brcm_types[0]); ++i) {
+            unsigned int dl_type = brcm_types[i];
+
+            // (1) Delete existing strict flows for this dl_type
+            OvsActionDebug("%s Cmd: ovs-ofctl --strict del-flows %s \"dl_type=0x%04x\"",
+                           __func__, req->parent_bridge, dl_type);
+            (void)run_cmd_bridge_dltype(
+                "ovs-ofctl --strict del-flows %s \"dl_type=0x%04x\"",
+                req->parent_bridge, dl_type);
+
+            // (2) If adding, push actual flow(s) for BRCM types here
+            if (req->if_cmd != OVS_BR_REMOVE_CMD) {
+                // TODO: Replace 'actions=normal' with desired actions for Broadcom frames
+                OvsActionDebug("%s Cmd: ovs-ofctl add-flow %s \"priority=2000,dl_type=0x%04x,actions=normal\"",
+                               __func__, req->parent_bridge, dl_type);
+                (void)run_cmd_bridge_dltype(
+                    "ovs-ofctl add-flow %s \"priority=2000,dl_type=0x%04x,actions=normal\"",
+                    req->parent_bridge, dl_type);
+            }
+        }
+    }
+
     return OVS_SUCCESS_STATUS;
 }
 
@@ -1097,14 +1145,7 @@ static OVS_STATUS ovs_setup_bridge_flows(Gateway_Config * req)
     }
 
     // sets up OpenFlow flows for bridge related flows
-    if (!g_ovsActionConfig.oneWifiEnabled && ((g_ovsActionConfig.modelNum == OVS_CGM4331COM_MODEL) ||
-        (g_ovsActionConfig.modelNum == OVS_CGA4332COM_MODEL) ||
-        (g_ovsActionConfig.modelNum == OVS_CGM4981COM_MODEL) ||
-        (g_ovsActionConfig.modelNum == OVS_CGM601TCOM_MODEL) ||
-        (g_ovsActionConfig.modelNum == OVS_CWA438TCOM_MODEL) ||
-        (g_ovsActionConfig.modelNum == OVS_SG417DBCT_MODEL) ||
-        (g_ovsActionConfig.modelNum == OVS_VTER11QEL_MODEL) ||
-	(g_ovsActionConfig.modelNum == OVS_SR203_MODEL)))
+    if (is_brcm_wifi_model())
     {
         if ((status = ovs_setup_brcm_wifi_flows(req)) != OVS_SUCCESS_STATUS)
         {
