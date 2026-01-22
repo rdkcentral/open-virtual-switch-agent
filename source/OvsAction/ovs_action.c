@@ -1145,7 +1145,7 @@ static OVS_STATUS ovs_setup_bridge_flows(Gateway_Config * req)
     }
 
     // sets up OpenFlow flows for bridge related flows
-    if (is_brcm_wifi_model())
+    if (is_brcm_wifi_model(g_ovsActionConfig.modelNum))
     {
         if ((status = ovs_setup_brcm_wifi_flows(req)) != OVS_SUCCESS_STATUS)
         {
