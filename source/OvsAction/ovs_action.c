@@ -127,13 +127,6 @@ void Set_Broadcast_address(char IfName[],char subnetmask[],char IpAddr[])
 }
 #endif
 
-static int run_cmd_bridge_dltype(const char *fmt, const char *bridge, unsigned int dl_type)
-{
-    int ret = v_secure_system(fmt, bridge, dl_type);
-    OvsActionDebug("%s : ret val of v_secure_system %d\n", __func__, ret);
-    return ret;
-}
-
 static bool is_brcm_wifi_model(int model)
 {
     switch (model) {
@@ -785,14 +778,14 @@ static OVS_STATUS ovs_setup_brcm_wifi_flows(Gateway_Config *req)
 
         OvsActionDebug("%s Cmd: ovs-ofctl --strict del-flows %s \"priority=3000,dl_type=0x%04x\"",
                        __func__, req->parent_bridge, EAPOL);
-        (void)run_cmd_bridge_dltype(
+        v_secure_system(
             "ovs-ofctl --strict del-flows %s \"priority=3000,dl_type=0x%04x\"",
             req->parent_bridge, EAPOL);
 
         if (req->if_cmd != OVS_BR_REMOVE_CMD) {
             OvsActionDebug("%s Cmd: ovs-ofctl add-flow %s \"priority=3000,dl_type=0x%04x,actions=output:ALL\"",
                            __func__, req->parent_bridge, EAPOL);
-            (void)run_cmd_bridge_dltype(
+            v_secure_system(
                 "ovs-ofctl add-flow %s \"priority=3000,dl_type=0x%04x,actions=output:ALL\"",
                 req->parent_bridge, EAPOL);
         }
@@ -811,7 +804,7 @@ static OVS_STATUS ovs_setup_brcm_wifi_flows(Gateway_Config *req)
             // (1) Delete existing strict flows for this dl_type
             OvsActionDebug("%s Cmd: ovs-ofctl --strict del-flows %s \"dl_type=0x%04x\"",
                            __func__, req->parent_bridge, dl_type);
-            (void)run_cmd_bridge_dltype(
+            v_secure_system(
                 "ovs-ofctl --strict del-flows %s \"dl_type=0x%04x\"",
                 req->parent_bridge, dl_type);
 
@@ -820,7 +813,7 @@ static OVS_STATUS ovs_setup_brcm_wifi_flows(Gateway_Config *req)
                 // TODO: Replace 'actions=normal' with desired actions for Broadcom frames
                 OvsActionDebug("%s Cmd: ovs-ofctl add-flow %s \"priority=2000,dl_type=0x%04x,actions=normal\"",
                                __func__, req->parent_bridge, dl_type);
-                (void)run_cmd_bridge_dltype(
+                v_secure_system(
                     "ovs-ofctl add-flow %s \"priority=2000,dl_type=0x%04x,actions=normal\"",
                     req->parent_bridge, dl_type);
             }
