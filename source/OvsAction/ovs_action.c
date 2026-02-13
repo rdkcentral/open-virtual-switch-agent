@@ -1081,28 +1081,39 @@ static OVS_STATUS configureParentBridge(Gateway_Config * req, bool ovs_enabled,
         v_secure_system("ifconfig %s %s", req->parent_bridge,(req->if_cmd==OVS_IF_UP_CMD ? "up" : "down"));
 #endif
     }
-
-    if (ovs_enabled)
+    if (req && req->if_name && req->parent_bridge &&
+        strcmp(req->if_name, "eth0") == 0 &&
+        strcmp(req->parent_bridge, "brlan0") == 0 &&
+        access("/tmp/warehouse_mode", F_OK) == 0)
     {
-    	v_secure_system( "ovs-vsctl add-port %s %s", req->parent_bridge,req->if_name);
-    	OvsActionDebug("%s Cmd: ovs-vsctl add-port %s %s\n", __func__, req->parent_bridge,req->if_name);
+        OvsActionInfo("%s: In warehouse mode, skipping port %s addition to bridge %s\n",
+                        __func__, req->if_name, req->parent_bridge);
     }
     else
     {
+        if (ovs_enabled)
+        {
+            v_secure_system( "ovs-vsctl add-port %s %s", req->parent_bridge,req->if_name);
+            OvsActionDebug("%s Cmd: ovs-vsctl add-port %s %s\n", __func__, req->parent_bridge,req->if_name);
+        }
+        else
+        {
 #ifdef CORE_NET_LIB
-        sts = interface_add_to_bridge(req->parent_bridge, req->if_name);
-        if (sts == CNL_STATUS_SUCCESS) {
-           OvsActionDebug("%s: Added interface %s to bridge %s\n", __func__, req->if_name, req->parent_bridge);
-        }
-        else {
-            OvsActionError("%s: Failed to add interface %s to bridge %s\n", __func__, req->if_name, req->parent_bridge);
-        }
+            sts = interface_add_to_bridge(req->parent_bridge, req->if_name);
+            if (sts == CNL_STATUS_SUCCESS)
+            {
+                OvsActionDebug("%s: Added interface %s to bridge %s\n", __func__, req->if_name, req->parent_bridge);
+            }
+            else
+            {
+                OvsActionError("%s: Failed to add interface %s to bridge %s\n", __func__, req->if_name, req->parent_bridge);
+            }
 #else
-	v_secure_system("brctl addif %s %s", req->parent_bridge, req->if_name);
-    	 OvsActionDebug("%s Cmd: brctl addif %s %s\n", __func__,  req->parent_bridge, req->if_name);
+            v_secure_system("brctl addif %s %s", req->parent_bridge, req->if_name);
+            OvsActionDebug("%s Cmd: brctl addif %s %s\n", __func__,  req->parent_bridge, req->if_name);
 #endif
+        }
     }
-
     if (ovs_enabled)
     {
     	OvsActionDebug("%s Cmd: ovs-vsctl list-ports %s\n", __func__, req->parent_bridge);
