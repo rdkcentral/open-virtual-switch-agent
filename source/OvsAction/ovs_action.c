@@ -1081,9 +1081,8 @@ static OVS_STATUS configureParentBridge(Gateway_Config * req, bool ovs_enabled,
         v_secure_system("ifconfig %s %s", req->parent_bridge,(req->if_cmd==OVS_IF_UP_CMD ? "up" : "down"));
 #endif
     }
-    if (req && req->if_name && req->parent_bridge &&
-        strcmp(req->if_name, "eth0") == 0 &&
-        strcmp(req->parent_bridge, "brlan0") == 0 &&
+    if (strcmp(req->if_name, "eth0") == 0 &&
+        strcmp(req->parent_bridge, BRLAN0_ETH_NAME) == 0 &&
         access("/tmp/warehouse_mode", F_OK) == 0)
     {
         OvsActionInfo("%s: In warehouse mode, skipping port %s addition to bridge %s\n",
