@@ -1272,12 +1272,12 @@ static OVS_STATUS ovs_createBridge(Gateway_Config * req)
 
     if (req->if_cmd == OVS_IF_DELETE_CMD)
     {
-        OvsActionDebug("%s Cmd: ovs-vsctl del-br %s\n", __func__, req->if_name);
+        OvsActionInfo("%s Cmd: ovs-vsctl del-br %s\n", __func__, req->if_name);
         v_secure_system("ovs-vsctl del-br %s", req->if_name);
         return OVS_SUCCESS_STATUS;
     }
 
-    OvsActionDebug("%s Cmd: ovs-vsctl add-br %s\n", __func__,req->if_name);
+    OvsActionInfo("%s Cmd: ovs-vsctl add-br %s\n", __func__,req->if_name);
     v_secure_system("ovs-vsctl add-br %s", req->if_name);
 
     if (strlen(req->inet_addr))
@@ -1303,9 +1303,10 @@ static OVS_STATUS ovs_createBridge(Gateway_Config * req)
 #ifdef CORE_NET_LIB
         if (req->if_cmd==OVS_IF_UP_CMD)
         {
+            OvsActionInfo("%s: Brought up bridge %s\n", __func__, req->if_name);
             sts = interface_up(req->if_name);
             if (sts == CNL_STATUS_SUCCESS) {
-                OvsActionDebug("%s: Brought up bridge %s\n", __func__, req->if_name);
+                OvsActionInfo("%s: Sucessfully brought up bridge %s\n", __func__, req->if_name);
             }
             else {
                 OvsActionError("%s: Failed to bring up bridge %s\n", __func__, req->if_name);
@@ -1315,7 +1316,7 @@ static OVS_STATUS ovs_createBridge(Gateway_Config * req)
         {
             sts = interface_down(req->if_name);
             if (sts == CNL_STATUS_SUCCESS) {
-                OvsActionDebug("%s: Brought down bridge %s\n", __func__, req->if_name);
+                OvsActionInfo("%s: Brought down bridge %s\n", __func__, req->if_name);
             }
             else {
                 OvsActionError("%s: Failed to bring down bridge %s\n", __func__, req->if_name);
@@ -1323,7 +1324,7 @@ static OVS_STATUS ovs_createBridge(Gateway_Config * req)
         }
 
 #else
-        OvsActionDebug("%s Cmd: ifconfig %s %s\n", __func__,  req->if_name,(req->if_cmd==OVS_IF_UP_CMD ? "up" : "down"));
+        OvsActionInfo("%s Cmd: ifconfig %s %s\n", __func__,  req->if_name,(req->if_cmd==OVS_IF_UP_CMD ? "up" : "down"));
         v_secure_system("ifconfig %s %s", req->if_name,(req->if_cmd==OVS_IF_UP_CMD ? "up" : "down"));
 #endif
     }
@@ -1335,13 +1336,13 @@ static OVS_STATUS ovs_createBridge(Gateway_Config * req)
         snprintf(mtu, sizeof(mtu), "%d", req->mtu);
         sts = interface_set_mtu(req->if_name, mtu);
         if (sts == CNL_STATUS_SUCCESS) {
-           OvsActionDebug("%s: Successfully set MTU %d for interface %s\n", __func__, req->mtu, req->if_name);
+           OvsActionInfo("%s: Successfully set MTU %d for interface %s\n", __func__, req->mtu, req->if_name);
         }
         else {
            OvsActionError("%s: Failed to set MTU %d for interface %s\n", __func__, req->mtu, req->if_name);
         }
 #else
-        OvsActionDebug("%s Cmd: ifconfig %s mtu %d\n", __func__, req->if_name, req->mtu);
+        OvsActionInfo("%s Cmd: ifconfig %s mtu %d\n", __func__, req->if_name, req->mtu);
         v_secure_system("ifconfig %s mtu %d", req->if_name, req->mtu);
 #endif
     }
