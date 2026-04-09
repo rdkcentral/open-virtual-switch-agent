@@ -16,7 +16,7 @@ graph LR
         OvsAgent["OvsAgent\n(This Component)"]
         OvsDbServer["OVSDB Server\n(ovsdb-server)"]
         CcspPsm["CcspPsm\n(PSM)"]
-        CcspCR["CcspCR\n(Component Registry)"]
+        CcspCR["Component Registry"]
     end
 
     subgraph SystemLayer ["System & Platform Layer"]
@@ -30,7 +30,7 @@ graph LR
     BridgeUtils -->|"Unix Socket\nJSON-RPC"| OvsDbServer
     MeshAgent -->|"Unix Socket\nJSON-RPC"| OvsDbServer
     OvsAgent -->|"Unix Socket /var/run/openvswitch/db.sock\nJSON-RPC OVSDB Protocol"| OvsDbServer
-    OvsAgent -->|"CCSP Message Bus\n(RBus)"| CcspCR
+    OvsAgent -->|"R-BUS"| CcspCR
     OvsAgent -->|"Reads /tmp/psm_initialized"| CcspPsm
     OvsAgent -->|"syscfg_get\nmesh_ovs_enable, lan_ipaddr"| Syscfg
     OvsAgent -->|"getenv MODEL_NUM\nOneWiFiEnabled"| DeviceProps
@@ -61,7 +61,7 @@ graph LR
 
 OvsAgent is designed around a single-responsibility principle: it is the sole executor of OVSDB-originated network configuration commands on the Linux platform. The design separates concerns into five distinct libraries linked into the final binary — the core orchestration layer, the public API, the database abstraction layer, the action execution layer, and the CCSP SSP integration layer. Each layer communicates through well-defined C interfaces, making the component straightforward to unit-test and extend.
 
-The northbound interface to OvsAgent is the OVSDB `Gateway_Config` table. Any RDK-B component that needs to configure a bridge or port inserts a row into this table using the OVS Agent API (`ovs_agent_api_interact`). The southbound interface consists of `ovs-vsctl`/`ovs-ofctl` commands for OVS bridge management and `brctl`/`ifconfig` utilities for Linux-native bridge operations, all invoked via `v_secure_system`. The CCSP message bus (R-BUS) connection via `libOvsAgentSsp` allows the agent to resolve CCSP component paths if needed, though the primary communication path is through the Unix socket to OVSDB.
+The northbound interface to OvsAgent is the OVSDB `Gateway_Config` table. Any RDK-B component that needs to configure a bridge or port inserts a row into this table using the OVS Agent API (`ovs_agent_api_interact`). The southbound interface consists of `ovs-vsctl`/`ovs-ofctl` commands for OVS bridge management and `brctl`/`ifconfig` utilities for Linux-native bridge operations, all invoked via `v_secure_system`. The R-BUS connection via `libOvsAgentSsp` allows the agent to resolve CCSP component paths if needed, though the primary communication path is through the Unix socket to OVSDB.
 
 The OVSDB socket layer runs a dedicated listener thread (`ovsdb_listen`) that continuously reads from the socket, parses incoming JSON-RPC messages using the jansson library, and dispatches them to the appropriate receipt or monitor update handlers. The main thread initializes all subsystems in sequence and then enters a sleep loop. Synchronization between the listener thread and the calling thread uses a `pthread_cond_t`/`pthread_mutex_t` pair with a configurable timeout (`OVS_BLOCK_MODE_TIMEOUT_SECS = 3` seconds).
 
@@ -73,7 +73,7 @@ A Component diagram showing the component's internal structure and dependencies 
 graph LR
     subgraph ExtSys ["External Systems"]
         OvsDbSrv[("OVSDB Server\n/var/run/openvswitch/db.sock")]
-        CcspBus[("CCSP Message Bus\n(R-BUS)")]
+        CcspBus[("R-BUS")]
     end
 
     subgraph OvsAgentProc ["OvsAgent Process (C, Linux)"]
@@ -152,17 +152,17 @@ graph LR
 
 The following configure options are available during the `./configure` step:
 
-| Configure Option                        | Purpose                                                                                                                                                                               | Default  |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `--enable-gtestapp`                     | Enables building the GTest unit test applications under `source/test/`. When disabled, the test subdirectory is excluded from the build.                                              | Disabled |
+| Configure Option                        | Purpose                                                                                                                                                                                    | Default  |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| `--enable-gtestapp`                     | Enables building the GTest unit test applications under `source/test/`. When disabled, the test subdirectory is excluded from the build.                                                   | Disabled |
 | `--enable-core_net_lib_feature_support` | Enables the core network library (`libnet`) backend in `OvsAction`. When active, bridge creation, port add/remove, and interface up/down use `libnet` API calls instead of shell commands. | Disabled |
 
 <br>
 
 **RDK-B Platform and Integration Requirements:**
 
-- **Build Dependencies**: `libjansson` (JSON parsing for OVSDB protocol), `libdbus-1 >= 1.6.18` (CCSP Message Bus), `libsyscfg` (syscfg get/init), `libccsp_common` (CCSP base interfaces), `liblog4c` (RDK logging), `libsafec` (safe string functions), `libsystemd` (systemd notify integration)
-- **RDK-B Components**: `CcspCr` (CCSP Component Registry must be reachable on R-BUS at startup), `CcspPsm` (PSM must have written `/tmp/psm_initialized` before OvsAgent starts)
+- **Build Dependencies**: `libjansson` (JSON parsing for OVSDB protocol), `libdbus-1 >= 1.6.18` (R-BUS), `libsyscfg` (syscfg get/init), `libccsp_common` (CCSP base interfaces), `liblog4c` (RDK logging), `libsystemd` (systemd notify integration)
+- **RDK-B Components**: Component Registry (must be reachable on R-BUS at startup), `CcspPsm` (PSM must have written `/tmp/psm_initialized` before OvsAgent starts)
 - **Systemd Services**: `OvsAgent.service` requires `OvsAgent_ovsdb-server.service`. `OvsAgent.path` triggers service start when `/tmp/psm_initialized` is created.
 - **Configuration Files**: `/etc/device.properties` must export `MODEL_NUM` and `OneWiFiEnabled` into the process environment. `/etc/debug.ini` is read by the RDK logger.
 - **syscfg Keys**: `mesh_ovs_enable` (controls service startup), `lan_ipaddr` (used for OpenFlow rule generation).
@@ -184,7 +184,7 @@ OvsAgent runs two threads throughout its process lifetime.
 
 **Initialization to Active State**
 
-OvsAgent starts conditionally. The systemd service executes `syscfg_check.sh` to read the `mesh_ovs_enable` syscfg key. If OVS is disabled and neither `OneWiFiEnabled` nor `/etc/WFO_enabled` is present, the script exits after touching `/tmp/ovsagent_initialized` without launching the binary. When OVS is enabled, the binary initializes each subsystem in order — RDK Logger, CCSP message bus, OVSDB API with listener thread, OvsAction with syscfg — then sets a monitor on the `Gateway_Config` table and creates `/tmp/ovsagent_initialized` to signal readiness.
+OvsAgent starts conditionally. The systemd service executes `syscfg_check.sh` to read the `mesh_ovs_enable` syscfg key. If OVS is disabled and neither `OneWiFiEnabled` nor `/etc/WFO_enabled` is present, the script exits after touching `/tmp/ovsagent_initialized` without launching the binary. When OVS is enabled, the binary initializes each subsystem in order — RDK Logger, R-BUS, OVSDB API with listener thread, OvsAction with syscfg — then sets a monitor on the `Gateway_Config` table and creates `/tmp/ovsagent_initialized` to signal readiness.
 
 ```mermaid
 sequenceDiagram
@@ -193,7 +193,7 @@ sequenceDiagram
     participant Script as syscfg_check.sh
     participant OvsAgent as OvsAgent Process
     participant OvsDbSrv as OVSDB Server
-    participant Cosa as CCSP Message Bus
+    participant Cosa as R-BUS
     participant Syscfg as syscfg
 
     Systemd->>Script: ExecStart (OvsAgent.service)
@@ -338,17 +338,17 @@ sequenceDiagram
 
 OvsAgent is organized into five library modules with a single executable entry point. Each library has a clearly scoped responsibility.
 
-| Module/Class                       | Description                                                                                                                                                                                                                                                                                                                                                                        | Key Files                                                                                                                                         |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **OvsAgentCore**                   | Entry point and top-level orchestration. Calls each subsystem in initialization order, registers the Gateway_Config monitor callback (`gwconf_mon_cb`), creates the `/tmp/ovsagent_initialized` marker on success, and drives the deinit sequence on shutdown.                                                                                                                     | `OvsAgentMain.c`, `OvsAgent.c`, `OvsAgentLog.c`, `OvsAgentLog.h`                                                                                  |
-| **OvsAgentApi** (`libOvsAgentApi`) | Public interaction API consumed by other RDK-B components. Manages the component lifecycle (`ovs_agent_api_init/deinit`), serializes requests to the OvsDbApi, tracks each request through a hash-table-based transaction manager (max 5 concurrent entries), and handles timed blocking waits for feedback.                                                                       | `OvsAgentApi.c`, `transaction_manager.c`, `transaction_interface.h`                                                                               |
-| **OvsDbApi** (`libOvsDbApi`)       | OVSDB protocol abstraction. Manages the Unix domain socket connection to the OVSDB server, runs the `ovsdb_listen` listener thread, serializes `Gateway_Config` and `Feedback` records to JSON-RPC using jansson, and dispatches received messages to receipt and monitor update lists.                                                                                            | `OvsDbApi.c`, `ovsdb_socket.c`, `ovsdb_parser.c`, `receipt_list.c`, `mon_update_list.c`, `json_parser/gateway_config.c`, `json_parser/feedback.c` |
+| Module/Class                       | Description                                                                                                                                                                                                                                                                                                                                                                                 | Key Files                                                                                                                                         |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **OvsAgentCore**                   | Entry point and top-level orchestration. Calls each subsystem in initialization order, registers the Gateway_Config monitor callback (`gwconf_mon_cb`), creates the `/tmp/ovsagent_initialized` marker on success, and drives the deinit sequence on shutdown.                                                                                                                              | `OvsAgentMain.c`, `OvsAgent.c`, `OvsAgentLog.c`, `OvsAgentLog.h`                                                                                  |
+| **OvsAgentApi** (`libOvsAgentApi`) | Public interaction API consumed by other RDK-B components. Manages the component lifecycle (`ovs_agent_api_init/deinit`), serializes requests to the OvsDbApi, tracks each request through a hash-table-based transaction manager (max 5 concurrent entries), and handles timed blocking waits for feedback.                                                                                | `OvsAgentApi.c`, `transaction_manager.c`, `transaction_interface.h`                                                                               |
+| **OvsDbApi** (`libOvsDbApi`)       | OVSDB protocol abstraction. Manages the Unix domain socket connection to the OVSDB server, runs the `ovsdb_listen` listener thread, serializes `Gateway_Config` and `Feedback` records to JSON-RPC using jansson, and dispatches received messages to receipt and monitor update lists.                                                                                                     | `OvsDbApi.c`, `ovsdb_socket.c`, `ovsdb_parser.c`, `receipt_list.c`, `mon_update_list.c`, `json_parser/gateway_config.c`, `json_parser/feedback.c` |
 | **OvsAction** (`libOvsAction`)     | Network operation execution. Reads device model and `OneWiFiEnabled` flag from environment variables and initializes syscfg at startup. Translates each `Gateway_Config` record into the appropriate `ovs-vsctl`, `brctl`, or `ifconfig` command (or `libnet` API calls when `CORE_NET_LIB` is defined). Handles OpenFlow flow setup for specific Wi-Fi hardware models and Mesh scenarios. | `ovs_action.c`, `ovs_action.h`, `syscfg.c`, `syscfg.h`                                                                                            |
-| **OvsAgentSsp** (`libOvsAgentSsp`) | CCSP Service Support Platform integration. Initializes the CCSP Message Bus connection, exposes helpers to discover CCSP component paths (`Cosa_FindDestComp`) and retrieve parameter values (`Cosa_GetParamValues`), and cleanly shuts down the bus handle.                                                                                                                       | `cosa_api.c`, `cosa_api.h`                                                                                                                        |
+| **OvsAgentSsp** (`libOvsAgentSsp`) | CCSP Service Support Platform integration. Initializes the R-BUS connection, exposes helpers to discover CCSP component paths (`Cosa_FindDestComp`) and retrieve parameter values (`Cosa_GetParamValues`), and cleanly shuts down the bus handle.                                                                                                                                | `cosa_api.c`, `cosa_api.h`                                                                                                                        |
 
 ## Component Interactions
 
-OvsAgent communicates with the OVSDB server over a Unix domain socket using JSON-RPC, with the `ovsdb_listen` thread handling all incoming messages. Network operations are executed through `v_secure_system` shell commands targeting `ovs-vsctl`, `brctl`, or `ifconfig`. The CCSP message bus connection initialized via `libOvsAgentSsp` enables CCSP component path resolution at startup.
+OvsAgent communicates with the OVSDB server over a Unix domain socket using JSON-RPC, with the `ovsdb_listen` thread handling all incoming messages. Network operations are executed through `v_secure_system` shell commands targeting `ovs-vsctl`, `brctl`, or `ifconfig`. The R-BUS connection initialized via `libOvsAgentSsp` enables CCSP component path resolution at startup.
 
 ### Interaction Matrix
 
@@ -358,7 +358,7 @@ OvsAgent communicates with the OVSDB server over a Unix domain socket using JSON
 | OVSDB Server (`ovsdb-server`)   | Primary communication channel. Receives `Gateway_Config` monitor updates; sends `Feedback` inserts and cleanup deletes.                      | Unix socket `/var/run/openvswitch/db.sock`, JSON-RPC `transact`, `monitor`, `monitor_cancel` methods                   |
 | BridgeUtils                     | Indirect; inserts `Gateway_Config` rows that OvsAgent monitors. OvsAgent does not call BridgeUtils directly.                                 | OVSDB `Gateway_Config` table (consumer side)                                                                           |
 | MeshAgent                       | Indirect; inserts `Gateway_Config` rows for Mesh networking bridge setup. OvsAgent sends Feedback on completion.                             | OVSDB `Gateway_Config` table (consumer side), OVSDB `Feedback` table                                                   |
-| CcspCR                          | CCSP Component Registry — used during `Cosa_Init()` to establish R-BUS bus handle.                                                           | `CCSP_Message_Bus_Init()`, `CcspBaseIf_discComponentSupportingNamespace()`                                             |
+| Component Registry              | CCSP Component Registry — used during `Cosa_Init()` to establish R-BUS bus handle.                                                           | `CCSP_Message_Bus_Init()`, `CcspBaseIf_discComponentSupportingNamespace()`                                             |
 | CcspPsm                         | Startup gate — OvsAgent service requires `/tmp/psm_initialized` to exist before it starts. No direct API calls to PSM at runtime.            | `ConditionPathExists=/tmp/psm_initialized` (systemd)                                                                   |
 | **System & Platform Layer**     |                                                                                                                                              |                                                                                                                        |
 | syscfg (NVRAM)                  | Reads `lan_ipaddr` for OpenFlow rule construction; `SyscfgInit()` called once in `ovs_action_init()`.                                        | `SyscfgInit()`, `SyscfgGet("lan_ipaddr", ...)` in `ovs_action.c`                                                       |
@@ -428,7 +428,7 @@ sequenceDiagram
 | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | `/etc/device.properties` | Supplies `MODEL_NUM` (device model identifier) and `OneWiFiEnabled` flag via environment variables injected by the systemd unit (`EnvironmentFile=`). | Replaced per platform at image build time.                        |
 | `/etc/debug.ini`         | RDK Logger configuration, read during `OvsAgentLogInit()`.                                                                                            | N/A                                                               |
-| `/tmp/ccsp_msg.cfg`      | CCSP Message Bus configuration file, read by `CCSP_Message_Bus_Init()` in `cosa_api.c`.                                                               | Written at runtime by CCSP infrastructure before OvsAgent starts. |
+| `/tmp/ccsp_msg.cfg`      | R-BUS configuration file, read by `CCSP_Message_Bus_Init()` in `cosa_api.c`.                                                               | Written at runtime by CCSP infrastructure before OvsAgent starts. |
 
 **Configuration Persistence:**
 
