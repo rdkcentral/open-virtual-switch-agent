@@ -31,8 +31,8 @@ graph LR
     MeshAgent -->|"Unix Socket\nJSON-RPC"| OvsDbServer
     OvsAgent -->|"Unix Socket /var/run/openvswitch/db.sock\nJSON-RPC OVSDB Protocol"| OvsDbServer
     OvsAgent -->|"R-BUS"| CcspCR
-    OvsAgent -->|"Reads /tmp/psm_initialized"| CcspPsm
-    OvsAgent -->|"syscfg_get\nmesh_ovs_enable, lan_ipaddr"| Syscfg
+    OvsAgent -->|"systemd gate\nConditionPathExists=/tmp/psm_initialized"| CcspPsm
+    OvsAgent -->|"syscfg_get\nlan_ipaddr"| Syscfg
     OvsAgent -->|"getenv MODEL_NUM\nOneWiFiEnabled"| DeviceProps
     OvsAgent -->|"v_secure_system"| OvsTools
     OvsAgent -->|"v_secure_system\n(non-OVS bridges)"| LinuxNet
@@ -55,7 +55,7 @@ graph LR
 - **Dual-mode Networking Backend**: Selects between OVS-managed (`ovs-vsctl`) and Linux-native (`brctl`/`ifconfig`) bridge operations at runtime based on the bridge name. To meet Xfinity WiFi requirements, specific bridges (`brlan2`–`brlan5`, `brpublic`, `bropen6g`, `brsecure6g`) are managed using Linux bridge utilities.
 - **Feedback Reporting**: After applying each configuration, inserts a `Feedback` record into the OVSDB `Feedback` table containing the request UUID and the operation status, allowing the originating component to confirm the outcome.
 - **OpenFlow Flow Configuration**: Sets up OpenFlow flows on OVS bridges for specific Wi-Fi hardware models and Mesh fast-roaming scenarios using `ovs-ofctl` commands after bridge configuration.
-- **Conditional Startup via syscfg**: Reads the `mesh_ovs_enable` syscfg key at startup. If the key is not set to `true` and neither `OneWiFiEnabled` nor `/etc/WFO_enabled` is present, the agent skips execution and touches `/tmp/ovsagent_initialized` to signal readiness without launching the main process.
+- **Conditional Startup via syscfg**: The service startup path checks the `mesh_ovs_enable` syscfg key before launching `/usr/bin/OvsAgent`. If the key is not set to `true` and neither `OneWiFiEnabled` nor `/etc/WFO_enabled` is present, startup is skipped and `/tmp/ovsagent_initialized` is touched to signal readiness without starting the main process.
 
 ## Design
 
@@ -161,9 +161,9 @@ The following configure options are available during the `./configure` step:
 
 **RDK-B Platform and Integration Requirements:**
 
-- **Build Dependencies**: `libjansson` (JSON parsing for OVSDB protocol), `libdbus-1 >= 1.6.18` (R-BUS), `libsyscfg` (syscfg get/init), `libccsp_common` (CCSP base interfaces), `liblog4c` (RDK logging), `libsystemd` (systemd notify integration)
+- **Build Dependencies**: `libjansson` (JSON parsing for OVSDB protocol), `libdbus-1 >= 1.6.18` (R-BUS), `libsyscfg` (syscfg get/init), `libccsp_common` (CCSP base interfaces), `liblog4c` (RDK logging)
 - **RDK-B Components**: Component Registry (must be reachable on R-BUS at startup), `CcspPsm` (PSM must have written `/tmp/psm_initialized` before OvsAgent starts)
-- **Systemd Services**: `OvsAgent.service` requires `OvsAgent_ovsdb-server.service`. `OvsAgent.path` triggers service start when `/tmp/psm_initialized` is created.
+- **Systemd Services**: Deployment may use `OvsAgent.service` with `OvsAgent_ovsdb-server.service` ordering, and `OvsAgent.path` may trigger service start when `/tmp/psm_initialized` is created. This is runtime/unit-file integration and not an in-repo `libsystemd` build dependency.
 - **Configuration Files**: `/etc/device.properties` must export `MODEL_NUM` and `OneWiFiEnabled` into the process environment. `/etc/debug.ini` is read by the RDK logger.
 - **syscfg Keys**: `mesh_ovs_enable` (controls service startup), `lan_ipaddr` (used for OpenFlow rule generation).
 - **Runtime Indicators**: `/tmp/ovsagent_initialized` — created after successful initialization. `/nvram/enable_ovs_debug` — enables debug-level logging.
@@ -408,7 +408,7 @@ sequenceDiagram
 
 ### Key Implementation Logic
 
-- **Bridge Backend Selection**: In `ovs_modifyParentBridge()` ([ovs_action.c](open-virtual-switch-agent/source/OvsAction/ovs_action.c#L1178-L1186)), the bridge name is checked against a hard-coded list (`brlan2`–`brlan5`, `brpublic`, `bropen6g`, `brsecure6g`) to meet Xfinity WiFi requirements. These bridges use Linux bridge utilities. All other bridges use `ovs-vsctl`.
+- **Bridge Backend Selection**: In `ovs_modifyParentBridge()` ([ovs_action.c](source/OvsAction/ovs_action.c#L1178-L1186)), the bridge name is checked against a hard-coded list (`brlan2`–`brlan5`, `brpublic`, `bropen6g`, `brsecure6g`) to meet Xfinity WiFi requirements. These bridges use Linux bridge utilities. All other bridges use `ovs-vsctl`.
 
 - **OpenFlow Flow Setup**: After creating or modifying a bridge, `ovs_setup_bridge_flows()` is called. For specific Wi-Fi hardware models (identified as `OVS_CGM4331COM_MODEL`, `OVS_CGA4332COM_MODEL`, `OVS_CGM4981COM_MODEL`, `OVS_CGM601TCOM_MODEL`, `OVS_SG417DBCT_MODEL`, `OVS_VTER11QEL_MODEL`, `OVS_SR203_MODEL`), `ovs_setup_brcm_wifi_flows()` sets up OpenFlow flows. Additional flows handle Mesh fast-roaming scenarios.
 
