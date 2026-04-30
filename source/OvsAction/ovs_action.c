@@ -137,6 +137,10 @@ static bool is_brcm_wifi_model(int model)
         case OVS_SG417DBCT_MODEL:
         case OVS_VTER11QEL_MODEL:
         case OVS_SR203_MODEL:
+        case OVS_SCXF11BFL_MODEL:
+        case OVS_SR213_MODEL:
+        case OVS_SCER11BEL_MODEL:
+        case OVS_WNXL11BWL_MODEL: 
             return true;
         default:
             return false;
