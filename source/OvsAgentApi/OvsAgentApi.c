@@ -468,17 +468,20 @@ static bool handle_transact_insert_request(ovs_interact_request * request, ovs_i
 
     if (!request)
     {
+        OvsAgentApiError("%s failed as request is NULL!\n", __func__);
         return false;
     }
 
     len = snprintf(rid, MAX_RID_LEN, "%u", id_generate());
     if (len <= 0 && len >= MAX_RID_LEN)
     {
+        OvsAgentApiError("%s failed to generate rId for request!\n", __func__);
         return false;
     }
 
     if (callback || request->block_mode == OVS_ENABLE_BLOCK_MODE)
     {   // RDKB Component case only
+        OvsAgentApiDebug("%s request has callback or block mode enabled \n", __func__);
         g_handle->blocked = (request->block_mode == OVS_ENABLE_BLOCK_MODE) ? true : false;
         cb = ovs_agent_api_write_callback;
 
@@ -509,11 +512,15 @@ static bool handle_transact_insert_request(ovs_interact_request * request, ovs_i
 
     if (request->block_mode != OVS_ENABLE_BLOCK_MODE)
     {
+        OvsAgentApiDebug("%s request is not block mode, returning immediately \n", __func__);
         return true;
     } // else block mode is enabled
     else
     {
+        OvsAgentApiDebug("%s request is block mode, waiting for callback completion \n", __func__);
         status = wait_for_callback_completion(rid, OVS_BLOCK_MODE_TIMEOUT_SECS);
+        OvsAgentApiDebug("%s wait for callback completion returned with status: %d for rId: %s\n",
+            __func__, status, rid);
     }
 
 cleanup:
@@ -541,6 +548,7 @@ static bool handle_monitor_insert_request(ovs_interact_request * request, ovs_in
 
     if (!request)
     {
+        OvsAgentApiError("%s failed as request is NULL!\n", __func__);
         return false;
     }
 
@@ -564,6 +572,7 @@ bool ovs_agent_api_interact(ovs_interact_request * request, ovs_interact_cb call
 
     if (!request)
     {
+        OvsAgentApiError("%s failed as request is NULL!\n", __func__);
         return false;
     }
 
@@ -582,12 +591,16 @@ bool ovs_agent_api_interact(ovs_interact_request * request, ovs_interact_cb call
     {
         if (request->method == OVS_TRANSACT_METHOD)
         {
+            OvsAgentApiDebug("%s handling transact insert request \n", __func__);
             rtn = handle_transact_insert_request(request, callback);
+            OvsAgentApiDebug("%s finished handling transact insert request with rtn: %d\n", __func__, rtn);
             goto cleanup;
         }
         else if (request->method == OVS_MONITOR_METHOD)
         { // OVS Agent case
+            OvsAgentApiDebug("%s handling monitor insert request \n", __func__);
             rtn = handle_monitor_insert_request(request, callback);
+            OvsAgentApiDebug("%s finished handling monitor insert request with rtn: %d\n", __func__, rtn);
             goto cleanup;
         }
     }
