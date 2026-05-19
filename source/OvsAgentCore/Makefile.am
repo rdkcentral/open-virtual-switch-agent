@@ -32,5 +32,5 @@ OvsAgent_LDADD += ${top_builddir}/source/OvsAgentSsp/libOvsAgentSsp.la
 OvsAgent_LDADD += ${top_builddir}/source/OvsAction/libOvsAction.la
 OvsAgent_CFLAGS = $(SYSTEMD_CFLAGS)
 OvsAgent_CFLAGS += "-DFEATURE_SUPPORT_RDKLOG"
-OvsAgent_CFLAGS += -fno-format-in-string -Wno-format
+OvsAgent_CFLAGS += -Wno-error=format
 OvsAgent_LDFLAGS = -ldl -rdynamic $(SYSTEMD_LDFLAGS) -llog4c
