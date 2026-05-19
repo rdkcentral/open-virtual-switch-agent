@@ -39,6 +39,8 @@ int main(int argc, char* argv[])
 
     fprintf(stderr, "OvsAgent %s EXIT\n", __FUNCTION__);
 
+    printf("Test coverity flow %s...\n");
+
     return 0;
 }
 

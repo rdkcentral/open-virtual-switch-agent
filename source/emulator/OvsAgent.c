@@ -70,8 +70,6 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    printf("Test coverity workflow.. %s\n");
-
     while (++count <= numBridges)
     {
         fprintf(stderr, "\n");
