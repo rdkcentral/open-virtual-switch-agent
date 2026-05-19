@@ -40,7 +40,7 @@ INCLUDE += -I../test/include/ccsp -I$(INCDIR)
 LDIR += -L$(LIBDIR)
 endif
 
-CFLAGS = -g -fPIC -fno-builtin -c --coverage
+CFLAGS = -g -fPIC -fno-builtin -c --coverage -fno-format-in-string -Wno-format
 ifeq ($(UNAME_S),Darwin)
 CFLAGS +=-DOVS_AGENT_API_LOG_FILE=\""/var/tmp/OvsAgentApiTest.log\""
 CFLAGS +=-DOVSAGENT_DEBUG_ENABLE=\""/var/tmp/enable_ovs_debug\""
