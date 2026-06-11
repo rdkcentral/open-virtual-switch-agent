@@ -1221,16 +1221,6 @@ static OVS_STATUS ovs_setup_port_flows(Gateway_Config * req)
         (strcmp(req->if_name, LLAN0_ETH_NAME) == 0))
     {
         // sets up OpenFlow flows for brlan0's llan0 interface port
-        if ((g_ovsActionConfig.modelNum == OVS_CGM4140COM_MODEL) ||
-            (g_ovsActionConfig.modelNum == OVS_TG3482G_MODEL) ||
-            (g_ovsActionConfig.modelNum == OVS_CGM4331COM_MODEL) ||
-            (g_ovsActionConfig.modelNum == OVS_CGA4332COM_MODEL) ||
-            (g_ovsActionConfig.modelNum == OVS_CGM601TCOM_MODEL) ||
-            (g_ovsActionConfig.modelNum == OVS_CWA438TCOM_MODEL) ||
-            (g_ovsActionConfig.modelNum == OVS_CGM4981COM_MODEL) ||
-            (g_ovsActionConfig.modelNum == OVS_SG417DBCT_MODEL) ||
-            (g_ovsActionConfig.modelNum == OVS_VTER11QEL_MODEL) ||
-            (g_ovsActionConfig.modelNum == OVS_TG4482A_MODEL))
         {
             if ((status = ovs_setup_admin_gui_access(req)) != OVS_SUCCESS_STATUS)
             {
