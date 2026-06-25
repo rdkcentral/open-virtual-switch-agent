@@ -140,7 +140,8 @@ static bool is_brcm_wifi_model(int model)
         case OVS_SCXF11BFL_MODEL:
         case OVS_SR213_MODEL:
         case OVS_SCER11BEL_MODEL:
-        case OVS_WNXL11BWL_MODEL: 
+        case OVS_WNXL11BWL_MODEL:
+        case OVS_AYER21BEL_MODEL:
             return true;
         default:
             return false;
@@ -242,6 +243,11 @@ static bool SetModelNum(const char * model_num, ovs_action_config * config)
     else if (strcmp(model_num, "SCXF11BFL") == 0)
     {
         config->modelNum = OVS_SCXF11BFL_MODEL;
+        rtn = true;
+    }
+    else if (strcmp(model_num, "AYER21BEL") == 0)
+    {
+        config->modelNum = OVS_AYER21BEL_MODEL;
         rtn = true;
     }
     else
