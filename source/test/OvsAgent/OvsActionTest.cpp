@@ -689,7 +689,7 @@ TEST_P(ModelNumBasedTestFixture, ovs_action_add_http_llan0_port_in_bridge_mode)
 
 INSTANTIATE_TEST_SUITE_P(PlatformSpecificOvsActionTests, ModelNumBasedTestFixture,
     ::testing::Values((char*)"CGM4140COM", (char*)"TG3482G",
-                      (char*)"CGM4331COM", (char*)"CGM4981COM", (char*)"CGM601TCOM", (char*)"CWA438TCOM", (char*)"SG417DBCT"),
+                      (char*)"CGM4331COM", (char*)"CGM4981COM", (char*)"CGM601TCOM", (char*)"CWA438TCOM", (char*)"SG417DBCT",
                       (char*)"AYER21BEL");
 
 // RDKB-35124 and RDKB-42700
