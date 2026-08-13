@@ -1081,9 +1081,11 @@ static OVS_STATUS configureParentBridge(Gateway_Config * req, bool ovs_enabled,
         v_secure_system("ifconfig %s %s", req->parent_bridge,(req->if_cmd==OVS_IF_UP_CMD ? "up" : "down"));
 #endif
     }
+    // Special Handling for XLE warehouse mode, skip adding eth0(WAN) to brlan0
     if (strcmp(req->if_name, "eth0") == 0 &&
         strcmp(req->parent_bridge, BRLAN0_ETH_NAME) == 0 &&
-        access("/tmp/warehouse_mode", F_OK) == 0)
+        access("/tmp/warehouse_mode", F_OK) == 0 &&
+        (g_ovsActionConfig.modelNum == OVS_WNXL11BWL_MODEL))
     {
         OvsActionInfo("%s: In warehouse mode, skipping port %s addition to bridge %s\n",
                         __func__, req->if_name, req->parent_bridge);
