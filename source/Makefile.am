@@ -16,7 +16,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-SUBDIRS = OvsAgentSsp OvsAction OvsDbApi OvsAgentApi OvsAgentCore
+SUBDIRS = OvsAgentSsp OvsAction OvsDbApi OvsAgentApi OvsAgentCore guardian
 
 if WITH_GTEST_SUPPORT
 SUBDIRS += test

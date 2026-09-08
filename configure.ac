@@ -85,6 +85,7 @@ AC_CONFIG_FILES(
     source/OvsDbApi/Makefile
     source/OvsAction/Makefile
     source/OvsAgentApi/Makefile
+    source/guardian/Makefile
 )
 
 AC_SUBST(GTEST_ENABLE_FLAG)
