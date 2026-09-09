@@ -52,13 +52,13 @@ static int open_bridge(const char *bridge, struct vconn **vconnp,
     int error = vconn_open(name, OFPUTIL_DEFAULT_VERSIONS, 0 /*dscp*/, vconnp);
     if (error) {
         fprintf(stderr, "guardian: vconn_open(%s) failed: %s\n",
-                name, ovs_strerror(error));
+                name, strerror(error));
         return -1;
     }
     error = vconn_connect_block(*vconnp, -1);
     if (error) {
         fprintf(stderr, "guardian: connect to %s failed: %s\n",
-                name, ovs_strerror(error));
+                name, strerror(error));
         vconn_close(*vconnp);
         return -1;
     }
@@ -94,7 +94,7 @@ static int send_flow_mod(struct vconn *vconn, enum ofputil_protocol protocol,
     minimatch_destroy(&fm.match);
 
     if (error) {
-        fprintf(stderr, "guardian: send flow failed: %s\n", ovs_strerror(error));
+        fprintf(stderr, "guardian: send flow failed: %s\n", strerror(error));
         return -1;
     }
     return 0;
@@ -162,7 +162,7 @@ int guardian_ovs_show(const char *bridge)
     size_t n = 0;
     int error = vconn_dump_flows(vconn, &fsr, protocol, &fses, &n);
     if (error) {
-        fprintf(stderr, "guardian: dump-flows failed: %s\n", ovs_strerror(error));
+        fprintf(stderr, "guardian: dump-flows failed: %s\n", strerror(error));
         vconn_close(vconn);
         return -1;
     }
