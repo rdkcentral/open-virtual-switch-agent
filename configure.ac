@@ -76,6 +76,7 @@ AC_C_INLINE
 AC_FUNC_MALLOC
 
 PKG_CHECK_MODULES([DBUS],[dbus-1 >= 1.6.18])
+PKG_CHECK_MODULES([OPENVSWITCH],[libopenvswitch])
 
 AC_CONFIG_FILES(
     Makefile
@@ -85,6 +86,7 @@ AC_CONFIG_FILES(
     source/OvsDbApi/Makefile
     source/OvsAction/Makefile
     source/OvsAgentApi/Makefile
+    source/guardian/Makefile
 )
 
 AC_SUBST(GTEST_ENABLE_FLAG)
