@@ -163,3 +163,42 @@ bool OvsAgentInit()
     return true;
 }
 
+/*
+ * COVERITY TEST FUNCTION - DO NOT CALL
+ * This function contains intentional defects for Coverity static analysis testing.
+ * It is never called and does not affect any functionality.
+ */
+static void coverity_test_dummy_function_do_not_call(void)
+{
+    /* HIGH SEVERITY: NULL pointer dereference (CWE-476) */
+    char *null_ptr = NULL;
+    int high_severity_null_deref = *null_ptr; /* Coverity: FORWARD_NULL */
+    (void)high_severity_null_deref;
+
+    /* HIGH SEVERITY: Buffer overflow (CWE-120) */
+    char small_buffer[10];
+    strcpy(small_buffer, "This string is way too long for the buffer"); /* Coverity: BUFFER_SIZE */
+
+    /* MEDIUM SEVERITY: Resource leak - file descriptor not closed (CWE-775) */
+    FILE *leaked_file = fopen("/tmp/coverity_test_file", "r"); /* Coverity: RESOURCE_LEAK */
+    if (leaked_file) {
+        /* Intentionally not closing the file */
+        char unused_read_buffer[64];
+        fgets(unused_read_buffer, sizeof(unused_read_buffer), leaked_file);
+    }
+
+    /* MEDIUM SEVERITY: Uninitialized variable (CWE-457) */
+    int uninitialized_var;
+    int medium_severity_uninit = uninitialized_var + 1; /* Coverity: UNINIT */
+    (void)medium_severity_uninit;
+
+    /* LOW SEVERITY: Unused variable (CWE-563) */
+    int low_severity_unused_var = 42; /* Coverity: UNUSED_VALUE */
+    (void)low_severity_unused_var;
+
+    /* LOW SEVERITY: Dead code - unreachable code after return */
+    return;
+    int dead_code_var = 100; /* Coverity: UNREACHABLE */
+    (void)dead_code_var;
+}
+
